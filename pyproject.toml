@@ -19,4 +19,29 @@ dev = [
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
     "pytest-mock>=3.15.1",
+    "httpx>=0.28.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",                    # verbose output
+    "--tb=short",            # shorter traceback format
+    "--strict-markers",      # strict marker validation
+    "-ra",                   # show summary of all test outcomes
+    "--cov=backend",         # coverage for backend directory
+    "--cov-report=term-missing",  # show missing lines in coverage
+    "--cov-report=html",     # generate HTML coverage report
+]
+markers = [
+    "unit: Unit tests for individual components",
+    "integration: Integration tests for component interactions",
+    "api: API endpoint tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore:resource_tracker.*:UserWarning",
 ]
