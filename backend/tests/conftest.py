@@ -18,10 +18,15 @@ from session_manager import SessionManager
 from tests.fixtures import (
     SAMPLE_COURSE_MCP,
     SAMPLE_SEARCH_RESULTS_VALID,
+    SAMPLE_SOURCES,
     create_chromadb_course_result,
     create_empty_chromadb_result,
 )
 from vector_store import SearchResults, VectorStore
+
+# FastAPI and testing imports
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture
@@ -170,3 +175,129 @@ def sample_chromadb_course_result():
 def sample_chromadb_empty_result():
     """Sample empty ChromaDB result"""
     return create_empty_chromadb_result()
+
+
+# ============================================================================
+# API Testing Fixtures
+# ============================================================================
+
+@pytest.fixture
+def test_app():
+    """
+    Create a test FastAPI app without static file mounting.
+    This avoids issues with the frontend directory not existing in tests.
+    """
+    from fastapi import FastAPI, HTTPException
+    from fastapi.middleware.cors import CORSMiddleware
+    from pydantic import BaseModel
+    from typing import List, Optional
+
+    # Import models
+    from models import Source
+
+    # Create test app
+    app = FastAPI(title="Course Materials RAG System - Test", root_path="")
+
+    # Enable CORS
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Request/Response models
+    class QueryRequest(BaseModel):
+        query: str
+        session_id: Optional[str] = None
+
+    class QueryResponse(BaseModel):
+        answer: str
+        sources: List[Source]
+        session_id: str
+
+    class CourseStats(BaseModel):
+        total_courses: int
+        course_titles: List[str]
+
+    # Store rag_system reference for mocking
+    app.state.rag_system = None
+
+    # Define endpoints
+    @app.post("/api/query", response_model=QueryResponse)
+    async def query_documents(request: QueryRequest):
+        try:
+            session_id = request.session_id
+            if not session_id:
+                session_id = app.state.rag_system.session_manager.create_session()
+
+            answer, sources = app.state.rag_system.query(request.query, session_id)
+
+            return QueryResponse(
+                answer=answer,
+                sources=sources,
+                session_id=session_id
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.get("/api/courses", response_model=CourseStats)
+    async def get_course_stats():
+        try:
+            analytics = app.state.rag_system.get_course_analytics()
+            return CourseStats(
+                total_courses=analytics["total_courses"],
+                course_titles=analytics["course_titles"]
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.delete("/api/session/{session_id}")
+    async def clear_session(session_id: str):
+        try:
+            app.state.rag_system.session_manager.clear_session(session_id)
+            return {"status": "success", "message": f"Session {session_id} cleared"}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return app
+
+
+@pytest.fixture
+def mock_rag_for_api(mock_config, mock_vector_store):
+    """
+    Create a fully mocked RAGSystem for API testing.
+    This fixture provides a complete mock with all necessary methods.
+    """
+    rag = Mock(spec=RAGSystem)
+
+    # Mock session manager
+    session_manager = Mock(spec=SessionManager)
+    session_manager.create_session = Mock(return_value="test-session-123")
+    session_manager.clear_session = Mock()
+    rag.session_manager = session_manager
+
+    # Mock query method - returns answer and sources
+    rag.query = Mock(return_value=("This is a test answer about MCP servers.", SAMPLE_SOURCES))
+
+    # Mock course analytics
+    rag.get_course_analytics = Mock(return_value={
+        "total_courses": 2,
+        "course_titles": ["Introduction to MCP Servers", "Prompt Caching Techniques"]
+    })
+
+    # Mock vector store
+    rag.vector_store = mock_vector_store
+
+    return rag
+
+
+@pytest.fixture
+def client(test_app, mock_rag_for_api):
+    """
+    Create a TestClient with mocked RAG system.
+    This client can be used to test API endpoints without dependencies.
+    """
+    test_app.state.rag_system = mock_rag_for_api
+    return TestClient(test_app)
