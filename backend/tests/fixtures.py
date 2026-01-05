@@ -1,9 +1,10 @@
 """Test fixtures and sample data for RAG system tests"""
-import json
-from typing import Dict, Any, List
-from models import Course, Lesson, Source, CourseChunk
-from vector_store import SearchResults
 
+import json
+from typing import Any, Dict, List
+
+from models import Course, CourseChunk, Lesson, Source
+from vector_store import SearchResults
 
 # Sample course data
 SAMPLE_COURSE_MCP = Course(
@@ -11,10 +12,22 @@ SAMPLE_COURSE_MCP = Course(
     course_link="https://example.com/mcp-course",
     instructor="John Doe",
     lessons=[
-        Lesson(lesson_number=1, title="Getting Started with MCP", lesson_link="https://example.com/mcp-lesson-1"),
-        Lesson(lesson_number=2, title="Building Your First Server", lesson_link="https://example.com/mcp-lesson-2"),
-        Lesson(lesson_number=3, title="Advanced MCP Patterns", lesson_link="https://example.com/mcp-lesson-3"),
-    ]
+        Lesson(
+            lesson_number=1,
+            title="Getting Started with MCP",
+            lesson_link="https://example.com/mcp-lesson-1",
+        ),
+        Lesson(
+            lesson_number=2,
+            title="Building Your First Server",
+            lesson_link="https://example.com/mcp-lesson-2",
+        ),
+        Lesson(
+            lesson_number=3,
+            title="Advanced MCP Patterns",
+            lesson_link="https://example.com/mcp-lesson-3",
+        ),
+    ],
 )
 
 SAMPLE_COURSE_PROMPT_CACHING = Course(
@@ -22,9 +35,17 @@ SAMPLE_COURSE_PROMPT_CACHING = Course(
     course_link="https://example.com/caching-course",
     instructor="Jane Smith",
     lessons=[
-        Lesson(lesson_number=1, title="Introduction to Caching", lesson_link="https://example.com/caching-lesson-1"),
-        Lesson(lesson_number=2, title="Implementation Strategies", lesson_link="https://example.com/caching-lesson-2"),
-    ]
+        Lesson(
+            lesson_number=1,
+            title="Introduction to Caching",
+            lesson_link="https://example.com/caching-lesson-1",
+        ),
+        Lesson(
+            lesson_number=2,
+            title="Implementation Strategies",
+            lesson_link="https://example.com/caching-lesson-2",
+        ),
+    ],
 )
 
 SAMPLE_COURSE_NO_LINK = Course(
@@ -33,14 +54,14 @@ SAMPLE_COURSE_NO_LINK = Course(
     instructor="Test Instructor",
     lessons=[
         Lesson(lesson_number=1, title="First Lesson", lesson_link=None),
-    ]
+    ],
 )
 
 SAMPLE_COURSE_NO_LESSONS = Course(
     title="Empty Course",
     course_link="https://example.com/empty-course",
     instructor="Empty Instructor",
-    lessons=[]
+    lessons=[],
 )
 
 
@@ -50,19 +71,19 @@ SAMPLE_CHUNKS_MCP = [
         content="Course Introduction to MCP Servers Lesson 1 content: MCP (Model Context Protocol) is a standardized way to connect AI models to external data sources.",
         course_title="Introduction to MCP Servers",
         lesson_number=1,
-        chunk_index=0
+        chunk_index=0,
     ),
     CourseChunk(
         content="Course Introduction to MCP Servers Lesson 1 content: MCP servers provide a secure and efficient way to access data without exposing sensitive information.",
         course_title="Introduction to MCP Servers",
         lesson_number=1,
-        chunk_index=1
+        chunk_index=1,
     ),
     CourseChunk(
         content="Course Introduction to MCP Servers Lesson 2 content: Building an MCP server requires understanding the protocol specification and implementing the required endpoints.",
         course_title="Introduction to MCP Servers",
         lesson_number=2,
-        chunk_index=2
+        chunk_index=2,
     ),
 ]
 
@@ -72,75 +93,69 @@ def create_chromadb_course_result(course: Course) -> Dict[str, Any]:
     """Create a ChromaDB-style query result for a course"""
     lessons_metadata = []
     for lesson in course.lessons:
-        lessons_metadata.append({
-            "lesson_number": lesson.lesson_number,
-            "lesson_title": lesson.title,
-            "lesson_link": lesson.lesson_link
-        })
+        lessons_metadata.append(
+            {
+                "lesson_number": lesson.lesson_number,
+                "lesson_title": lesson.title,
+                "lesson_link": lesson.lesson_link,
+            }
+        )
 
     return {
-        'documents': [[course.title]],
-        'metadatas': [[{
-            'title': course.title,
-            'instructor': course.instructor,
-            'course_link': course.course_link,
-            'lessons_json': json.dumps(lessons_metadata),
-            'lesson_count': len(course.lessons)
-        }]],
-        'distances': [[0.1]]
+        "documents": [[course.title]],
+        "metadatas": [
+            [
+                {
+                    "title": course.title,
+                    "instructor": course.instructor,
+                    "course_link": course.course_link,
+                    "lessons_json": json.dumps(lessons_metadata),
+                    "lesson_count": len(course.lessons),
+                }
+            ]
+        ],
+        "distances": [[0.1]],
     }
 
 
 def create_empty_chromadb_result() -> Dict[str, Any]:
     """Create an empty ChromaDB-style query result"""
-    return {
-        'documents': [[]],
-        'metadatas': [[]],
-        'distances': [[]]
-    }
+    return {"documents": [[]], "metadatas": [[]], "distances": [[]]}
 
 
 def create_chromadb_content_result(chunks: List[CourseChunk]) -> Dict[str, Any]:
     """Create a ChromaDB-style query result for content search"""
     documents = [chunk.content for chunk in chunks]
-    metadatas = [{
-        'course_title': chunk.course_title,
-        'lesson_number': chunk.lesson_number,
-        'chunk_index': chunk.chunk_index
-    } for chunk in chunks]
+    metadatas = [
+        {
+            "course_title": chunk.course_title,
+            "lesson_number": chunk.lesson_number,
+            "chunk_index": chunk.chunk_index,
+        }
+        for chunk in chunks
+    ]
     distances = [0.1 * (i + 1) for i in range(len(chunks))]
 
-    return {
-        'documents': [documents],
-        'metadatas': [metadatas],
-        'distances': [distances]
-    }
+    return {"documents": [documents], "metadatas": [metadatas], "distances": [distances]}
 
 
 # Sample SearchResults objects
 SAMPLE_SEARCH_RESULTS_VALID = SearchResults(
     documents=[
         "Course Introduction to MCP Servers Lesson 1 content: MCP is a protocol for connecting AI models.",
-        "Course Introduction to MCP Servers Lesson 2 content: Building MCP servers is straightforward."
+        "Course Introduction to MCP Servers Lesson 2 content: Building MCP servers is straightforward.",
     ],
     metadata=[
-        {'course_title': 'Introduction to MCP Servers', 'lesson_number': 1, 'chunk_index': 0},
-        {'course_title': 'Introduction to MCP Servers', 'lesson_number': 2, 'chunk_index': 0}
+        {"course_title": "Introduction to MCP Servers", "lesson_number": 1, "chunk_index": 0},
+        {"course_title": "Introduction to MCP Servers", "lesson_number": 2, "chunk_index": 0},
     ],
-    distances=[0.1, 0.2]
+    distances=[0.1, 0.2],
 )
 
-SAMPLE_SEARCH_RESULTS_EMPTY = SearchResults(
-    documents=[],
-    metadata=[],
-    distances=[]
-)
+SAMPLE_SEARCH_RESULTS_EMPTY = SearchResults(documents=[], metadata=[], distances=[])
 
 SAMPLE_SEARCH_RESULTS_ERROR = SearchResults(
-    documents=[],
-    metadata=[],
-    distances=[],
-    error="Search failed: Connection error"
+    documents=[], metadata=[], distances=[], error="Search failed: Connection error"
 )
 
 

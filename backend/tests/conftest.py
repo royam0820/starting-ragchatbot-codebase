@@ -1,25 +1,27 @@
 """Pytest configuration and shared fixtures"""
-import pytest
-from unittest.mock import Mock, MagicMock, patch
-from typing import Dict, Any, List
-import sys
+
 import os
+import sys
+from typing import Any, Dict, List
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from vector_store import SearchResults, VectorStore
-from search_tools import CourseSearchTool, CourseOutlineTool, ToolManager
 from ai_generator import AIGenerator
-from session_manager import SessionManager
-from rag_system import RAGSystem
 from models import Course, Lesson, Source
+from rag_system import RAGSystem
+from search_tools import CourseOutlineTool, CourseSearchTool, ToolManager
+from session_manager import SessionManager
 from tests.fixtures import (
     SAMPLE_COURSE_MCP,
     SAMPLE_SEARCH_RESULTS_VALID,
     create_chromadb_course_result,
-    create_empty_chromadb_result
+    create_empty_chromadb_result,
 )
+from vector_store import SearchResults, VectorStore
 
 
 @pytest.fixture
@@ -118,8 +120,8 @@ def mock_rag_system(mock_config, mock_vector_store, ai_generator, session_manage
     system.ai_generator = ai_generator
     system.session_manager = session_manager
     system.tool_manager = tool_manager
-    system.search_tool = tool_manager.tools.get('search_course_content')
-    system.outline_tool = tool_manager.tools.get('get_course_outline')
+    system.search_tool = tool_manager.tools.get("search_course_content")
+    system.outline_tool = tool_manager.tools.get("get_course_outline")
 
     # Mock query method
     system.query = Mock(return_value=("Test response", []))
@@ -134,31 +136,22 @@ def sample_search_results_valid():
         documents=["Document 1", "Document 2"],
         metadata=[
             {"course_title": "Test Course", "lesson_number": 1},
-            {"course_title": "Test Course", "lesson_number": 2}
+            {"course_title": "Test Course", "lesson_number": 2},
         ],
-        distances=[0.1, 0.2]
+        distances=[0.1, 0.2],
     )
 
 
 @pytest.fixture
 def sample_search_results_empty():
     """Empty search results fixture"""
-    return SearchResults(
-        documents=[],
-        metadata=[],
-        distances=[]
-    )
+    return SearchResults(documents=[], metadata=[], distances=[])
 
 
 @pytest.fixture
 def sample_search_results_error():
     """Error search results fixture"""
-    return SearchResults(
-        documents=[],
-        metadata=[],
-        distances=[],
-        error="Test error message"
-    )
+    return SearchResults(documents=[], metadata=[], distances=[], error="Test error message")
 
 
 @pytest.fixture

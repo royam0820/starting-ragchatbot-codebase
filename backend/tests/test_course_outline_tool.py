@@ -1,15 +1,17 @@
 """Tests for CourseOutlineTool"""
-import pytest
+
 import json
 from unittest.mock import Mock, patch
-from search_tools import CourseOutlineTool
+
+import pytest
 from models import Source
+from search_tools import CourseOutlineTool
 from tests.fixtures import (
     SAMPLE_COURSE_MCP,
-    SAMPLE_COURSE_NO_LINK,
     SAMPLE_COURSE_NO_LESSONS,
+    SAMPLE_COURSE_NO_LINK,
     create_chromadb_course_result,
-    create_empty_chromadb_result
+    create_empty_chromadb_result,
 )
 
 
@@ -25,10 +27,7 @@ class TestCourseOutlineTool:
         result = course_outline_tool.execute(course_name="MCP")
 
         # Verify query was called correctly
-        course_outline_tool.store.course_catalog.query.assert_called_once_with(
-            query_texts=["MCP"],
-            n_results=1
-        )
+        course_outline_tool.store.course_catalog.query.assert_called_once_with(query_texts=["MCP"], n_results=1)
 
         # Verify result contains expected content
         assert "Course: Introduction to MCP Servers" in result
@@ -53,8 +52,7 @@ class TestCourseOutlineTool:
 
         # Verify semantic search was called with partial name
         course_outline_tool.store.course_catalog.query.assert_called_once_with(
-            query_texts=["Introduction"],
-            n_results=1
+            query_texts=["Introduction"], n_results=1
         )
 
         # Verify correct course was found
@@ -77,9 +75,9 @@ class TestCourseOutlineTool:
         """Test handling of truly empty query results - THIS SHOULD CURRENTLY FAIL"""
         # Create completely empty ChromaDB result structure
         empty_result = {
-            'documents': [[]],  # Empty list at index 0
-            'metadatas': [[]],  # Empty list at index 0
-            'distances': [[]]
+            "documents": [[]],  # Empty list at index 0
+            "metadatas": [[]],  # Empty list at index 0
+            "distances": [[]],
         }
 
         course_outline_tool.store.course_catalog.query.return_value = empty_result
@@ -94,15 +92,19 @@ class TestCourseOutlineTool:
         """Test error handling with malformed JSON in lessons_json field"""
         # Create result with invalid JSON
         malformed_result = {
-            'documents': [["Test Course"]],
-            'metadatas': [[{
-                'title': "Test Course",
-                'instructor': "Test Instructor",
-                'course_link': "https://example.com/test",
-                'lessons_json': "{ invalid json",  # Malformed JSON
-                'lesson_count': 1
-            }]],
-            'distances': [[0.1]]
+            "documents": [["Test Course"]],
+            "metadatas": [
+                [
+                    {
+                        "title": "Test Course",
+                        "instructor": "Test Instructor",
+                        "course_link": "https://example.com/test",
+                        "lessons_json": "{ invalid json",  # Malformed JSON
+                        "lesson_count": 1,
+                    }
+                ]
+            ],
+            "distances": [[0.1]],
         }
 
         course_outline_tool.store.course_catalog.query.return_value = malformed_result

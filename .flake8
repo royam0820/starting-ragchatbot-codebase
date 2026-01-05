@@ -1,0 +1,16 @@
+[flake8]
+max-line-length = 120
+extend-ignore = E203, W503, E501
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    .eggs,
+    *.egg,
+    build,
+    dist,
+    chroma_db
+per-file-ignores =
+    __init__.py:F401
+    backend/app.py:E402
+    backend/tests/conftest.py:E402

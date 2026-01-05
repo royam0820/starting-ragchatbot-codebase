@@ -1,28 +1,37 @@
 """Tests for RAGSystem integration"""
+
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from rag_system import RAGSystem
-from vector_store import SearchResults
 from models import Source
+from rag_system import RAGSystem
 from tests.fixtures import (
+    SAMPLE_SOURCES,
     create_anthropic_text_response,
     create_anthropic_tool_use_response,
-    SAMPLE_SOURCES
 )
+from vector_store import SearchResults
 
 
 class TestRAGSystem:
     """Integration tests for RAGSystem.query()"""
 
-    @patch('rag_system.DocumentProcessor')
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.SessionManager')
-    @patch('rag_system.CourseSearchTool')
-    @patch('rag_system.CourseOutlineTool')
-    def test_query_without_session(self, mock_outline_tool, mock_search_tool,
-                                   mock_session_mgr, mock_ai_gen, mock_vector_store,
-                                   mock_doc_proc, mock_config):
+    @patch("rag_system.DocumentProcessor")
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.SessionManager")
+    @patch("rag_system.CourseSearchTool")
+    @patch("rag_system.CourseOutlineTool")
+    def test_query_without_session(
+        self,
+        mock_outline_tool,
+        mock_search_tool,
+        mock_session_mgr,
+        mock_ai_gen,
+        mock_vector_store,
+        mock_doc_proc,
+        mock_config,
+    ):
         """Test query without session_id"""
         # Create RAG system with mocked components
         rag = RAGSystem(mock_config)
@@ -43,17 +52,24 @@ class TestRAGSystem:
         # Verify AI generator called without history
         rag.ai_generator.generate_response.assert_called_once()
         call_args = rag.ai_generator.generate_response.call_args
-        assert call_args[1].get('conversation_history') is None
+        assert call_args[1].get("conversation_history") is None
 
-    @patch('rag_system.DocumentProcessor')
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.SessionManager')
-    @patch('rag_system.CourseSearchTool')
-    @patch('rag_system.CourseOutlineTool')
-    def test_query_with_session(self, mock_outline_tool, mock_search_tool,
-                               mock_session_mgr, mock_ai_gen, mock_vector_store,
-                               mock_doc_proc, mock_config):
+    @patch("rag_system.DocumentProcessor")
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.SessionManager")
+    @patch("rag_system.CourseSearchTool")
+    @patch("rag_system.CourseOutlineTool")
+    def test_query_with_session(
+        self,
+        mock_outline_tool,
+        mock_search_tool,
+        mock_session_mgr,
+        mock_ai_gen,
+        mock_vector_store,
+        mock_doc_proc,
+        mock_config,
+    ):
         """Test query with session_id maintains history"""
         # Create RAG system
         rag = RAGSystem(mock_config)
@@ -77,24 +93,29 @@ class TestRAGSystem:
 
         # Verify AI received history
         call_args = rag.ai_generator.generate_response.call_args
-        assert call_args[1].get('conversation_history') == test_history
+        assert call_args[1].get("conversation_history") == test_history
 
         # Verify exchange was added to history
         rag.session_manager.add_exchange.assert_called_once_with(
-            "test_session",
-            "Follow-up question",
-            "Response with history"
+            "test_session", "Follow-up question", "Response with history"
         )
 
-    @patch('rag_system.DocumentProcessor')
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.SessionManager')
-    @patch('rag_system.CourseSearchTool')
-    @patch('rag_system.CourseOutlineTool')
-    def test_query_content_search_flow(self, mock_outline_tool, mock_search_tool,
-                                       mock_session_mgr, mock_ai_gen, mock_vector_store,
-                                       mock_doc_proc, mock_config):
+    @patch("rag_system.DocumentProcessor")
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.SessionManager")
+    @patch("rag_system.CourseSearchTool")
+    @patch("rag_system.CourseOutlineTool")
+    def test_query_content_search_flow(
+        self,
+        mock_outline_tool,
+        mock_search_tool,
+        mock_session_mgr,
+        mock_ai_gen,
+        mock_vector_store,
+        mock_doc_proc,
+        mock_config,
+    ):
         """Test full content search flow"""
         # Create RAG system
         rag = RAGSystem(mock_config)
@@ -120,15 +141,22 @@ class TestRAGSystem:
         # Verify sources were reset after retrieval
         rag.tool_manager.reset_sources.assert_called_once()
 
-    @patch('rag_system.DocumentProcessor')
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.SessionManager')
-    @patch('rag_system.CourseSearchTool')
-    @patch('rag_system.CourseOutlineTool')
-    def test_query_outline_tool_flow(self, mock_outline_tool, mock_search_tool,
-                                     mock_session_mgr, mock_ai_gen, mock_vector_store,
-                                     mock_doc_proc, mock_config):
+    @patch("rag_system.DocumentProcessor")
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.SessionManager")
+    @patch("rag_system.CourseSearchTool")
+    @patch("rag_system.CourseOutlineTool")
+    def test_query_outline_tool_flow(
+        self,
+        mock_outline_tool,
+        mock_search_tool,
+        mock_session_mgr,
+        mock_ai_gen,
+        mock_vector_store,
+        mock_doc_proc,
+        mock_config,
+    ):
         """Test outline query flow"""
         # Create RAG system
         rag = RAGSystem(mock_config)
@@ -150,17 +178,24 @@ class TestRAGSystem:
 
         # Verify tool definitions were passed to AI
         call_args = rag.ai_generator.generate_response.call_args
-        assert 'tools' in call_args[1]
+        assert "tools" in call_args[1]
 
-    @patch('rag_system.DocumentProcessor')
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.SessionManager')
-    @patch('rag_system.CourseSearchTool')
-    @patch('rag_system.CourseOutlineTool')
-    def test_query_with_tool_execution_failure(self, mock_outline_tool, mock_search_tool,
-                                               mock_session_mgr, mock_ai_gen, mock_vector_store,
-                                               mock_doc_proc, mock_config):
+    @patch("rag_system.DocumentProcessor")
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.SessionManager")
+    @patch("rag_system.CourseSearchTool")
+    @patch("rag_system.CourseOutlineTool")
+    def test_query_with_tool_execution_failure(
+        self,
+        mock_outline_tool,
+        mock_search_tool,
+        mock_session_mgr,
+        mock_ai_gen,
+        mock_vector_store,
+        mock_doc_proc,
+        mock_config,
+    ):
         """Test handling when tool execution returns error"""
         # Create RAG system
         rag = RAGSystem(mock_config)
@@ -179,15 +214,22 @@ class TestRAGSystem:
         assert answer == "I couldn't find that information"
         assert sources == []
 
-    @patch('rag_system.DocumentProcessor')
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.SessionManager')
-    @patch('rag_system.CourseSearchTool')
-    @patch('rag_system.CourseOutlineTool')
-    def test_query_with_ai_generator_exception(self, mock_outline_tool, mock_search_tool,
-                                               mock_session_mgr, mock_ai_gen, mock_vector_store,
-                                               mock_doc_proc, mock_config):
+    @patch("rag_system.DocumentProcessor")
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.SessionManager")
+    @patch("rag_system.CourseSearchTool")
+    @patch("rag_system.CourseOutlineTool")
+    def test_query_with_ai_generator_exception(
+        self,
+        mock_outline_tool,
+        mock_search_tool,
+        mock_session_mgr,
+        mock_ai_gen,
+        mock_vector_store,
+        mock_doc_proc,
+        mock_config,
+    ):
         """Test handling when AI generator raises exception"""
         # Create RAG system
         rag = RAGSystem(mock_config)
@@ -201,15 +243,22 @@ class TestRAGSystem:
 
         assert "API error" in str(exc_info.value)
 
-    @patch('rag_system.DocumentProcessor')
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.SessionManager')
-    @patch('rag_system.CourseSearchTool')
-    @patch('rag_system.CourseOutlineTool')
-    def test_query_general_knowledge_no_tools(self, mock_outline_tool, mock_search_tool,
-                                             mock_session_mgr, mock_ai_gen, mock_vector_store,
-                                             mock_doc_proc, mock_config):
+    @patch("rag_system.DocumentProcessor")
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.SessionManager")
+    @patch("rag_system.CourseSearchTool")
+    @patch("rag_system.CourseOutlineTool")
+    def test_query_general_knowledge_no_tools(
+        self,
+        mock_outline_tool,
+        mock_search_tool,
+        mock_session_mgr,
+        mock_ai_gen,
+        mock_vector_store,
+        mock_doc_proc,
+        mock_config,
+    ):
         """Test general knowledge question doesn't use tools"""
         # Create RAG system
         rag = RAGSystem(mock_config)
@@ -228,15 +277,22 @@ class TestRAGSystem:
         assert answer == "General knowledge answer"
         assert sources == []
 
-    @patch('rag_system.DocumentProcessor')
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.SessionManager')
-    @patch('rag_system.CourseSearchTool')
-    @patch('rag_system.CourseOutlineTool')
-    def test_query_with_multiple_sessions(self, mock_outline_tool, mock_search_tool,
-                                          mock_session_mgr, mock_ai_gen, mock_vector_store,
-                                          mock_doc_proc, mock_config):
+    @patch("rag_system.DocumentProcessor")
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.SessionManager")
+    @patch("rag_system.CourseSearchTool")
+    @patch("rag_system.CourseOutlineTool")
+    def test_query_with_multiple_sessions(
+        self,
+        mock_outline_tool,
+        mock_search_tool,
+        mock_session_mgr,
+        mock_ai_gen,
+        mock_vector_store,
+        mock_doc_proc,
+        mock_config,
+    ):
         """Test that multiple sessions maintain separate histories"""
         # Create RAG system
         rag = RAGSystem(mock_config)
@@ -259,11 +315,11 @@ class TestRAGSystem:
 
         # Query session 1
         rag.query("Question 1", session_id="session1")
-        call1_history = rag.ai_generator.generate_response.call_args[1].get('conversation_history')
+        call1_history = rag.ai_generator.generate_response.call_args[1].get("conversation_history")
 
         # Query session 2
         rag.query("Question 2", session_id="session2")
-        call2_history = rag.ai_generator.generate_response.call_args[1].get('conversation_history')
+        call2_history = rag.ai_generator.generate_response.call_args[1].get("conversation_history")
 
         # Verify different histories were used
         assert call1_history != call2_history

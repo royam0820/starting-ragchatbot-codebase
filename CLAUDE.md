@@ -46,6 +46,45 @@ uv remove package_name
 uv sync
 ```
 
+### Code Quality
+
+This project uses automated code quality tools to maintain consistency and catch issues early.
+
+**Quick Commands:**
+```bash
+# Format code (run before committing)
+./format.sh
+
+# Run all quality checks
+./quality_check.sh
+```
+
+**Individual Tools:**
+```bash
+# Format code with black (120 char line length)
+uv run black backend/
+
+# Sort imports with isort
+uv run isort backend/
+
+# Lint with flake8
+uv run flake8 backend/
+
+# Type check with mypy
+uv run mypy backend/
+```
+
+**Configuration:**
+- **Black**: Configured in `pyproject.toml` with 120 char line length
+- **isort**: Configured to be compatible with Black
+- **flake8**: Configured in `.flake8` (excludes E501 line length warnings since Black handles formatting)
+- **mypy**: Configured in `pyproject.toml` with moderate strictness
+
+**Important Notes:**
+- Always run `./format.sh` before committing code
+- The quality check script runs in CI/CD (checks only, no modifications)
+- Test files may have unused imports for fixtures - this is acceptable
+
 The application runs at `http://localhost:8000` (web interface) and `http://localhost:8000/docs` (API documentation).
 
 ### Testing Queries
@@ -183,6 +222,7 @@ Each chunk includes metadata in content for better retrieval:
 
 ## Dependencies
 
+**Production:**
 - Python 3.13+
 - uv (package manager)
 - chromadb 1.0.15
@@ -190,6 +230,15 @@ Each chunk includes metadata in content for better retrieval:
 - sentence-transformers 5.0.0
 - fastapi 0.116.1
 - uvicorn 0.35.0
+
+**Development:**
+- black 25.12.0+ (code formatter)
+- isort 7.0.0+ (import sorter)
+- flake8 7.3.0+ (linter)
+- mypy 1.19.1+ (type checker)
+- pytest 9.0.2+ (testing framework)
+- pytest-cov 7.0.0+ (coverage reporting)
+- pytest-mock 3.15.1+ (mocking utilities)
 
 ## File Locations
 

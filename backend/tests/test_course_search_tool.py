@@ -1,14 +1,16 @@
 """Tests for CourseSearchTool"""
-import pytest
+
 from unittest.mock import Mock, patch
-from search_tools import CourseSearchTool
-from vector_store import SearchResults
+
+import pytest
 from models import Source
+from search_tools import CourseSearchTool
 from tests.fixtures import (
-    SAMPLE_SEARCH_RESULTS_VALID,
     SAMPLE_SEARCH_RESULTS_EMPTY,
-    SAMPLE_SEARCH_RESULTS_ERROR
+    SAMPLE_SEARCH_RESULTS_ERROR,
+    SAMPLE_SEARCH_RESULTS_VALID,
 )
+from vector_store import SearchResults
 
 
 class TestCourseSearchTool:
@@ -20,10 +22,18 @@ class TestCourseSearchTool:
         valid_results = SearchResults(
             documents=["Content about MCP servers", "More MCP content"],
             metadata=[
-                {"course_title": "Introduction to MCP Servers", "lesson_number": 1, "chunk_index": 0},
-                {"course_title": "Introduction to MCP Servers", "lesson_number": 2, "chunk_index": 0}
+                {
+                    "course_title": "Introduction to MCP Servers",
+                    "lesson_number": 1,
+                    "chunk_index": 0,
+                },
+                {
+                    "course_title": "Introduction to MCP Servers",
+                    "lesson_number": 2,
+                    "chunk_index": 0,
+                },
             ],
-            distances=[0.1, 0.2]
+            distances=[0.1, 0.2],
         )
         course_search_tool.store.search.return_value = valid_results
 
@@ -32,9 +42,7 @@ class TestCourseSearchTool:
 
         # Verify search was called
         course_search_tool.store.search.assert_called_once_with(
-            query="What is MCP?",
-            course_name=None,
-            lesson_number=None
+            query="What is MCP?", course_name=None, lesson_number=None
         )
 
         # Verify formatted output
@@ -51,7 +59,7 @@ class TestCourseSearchTool:
         valid_results = SearchResults(
             documents=["Filtered content"],
             metadata=[{"course_title": "MCP Course", "lesson_number": 1, "chunk_index": 0}],
-            distances=[0.1]
+            distances=[0.1],
         )
         course_search_tool.store.search.return_value = valid_results
 
@@ -60,9 +68,7 @@ class TestCourseSearchTool:
 
         # Verify course_name was passed
         course_search_tool.store.search.assert_called_once_with(
-            query="test query",
-            course_name="MCP",
-            lesson_number=None
+            query="test query", course_name="MCP", lesson_number=None
         )
 
         # Verify result contains content
@@ -73,7 +79,7 @@ class TestCourseSearchTool:
         valid_results = SearchResults(
             documents=["Lesson specific content"],
             metadata=[{"course_title": "Test Course", "lesson_number": 2, "chunk_index": 0}],
-            distances=[0.1]
+            distances=[0.1],
         )
         course_search_tool.store.search.return_value = valid_results
 
@@ -81,11 +87,7 @@ class TestCourseSearchTool:
         result = course_search_tool.execute(query="test query", lesson_number=2)
 
         # Verify lesson_number was passed
-        course_search_tool.store.search.assert_called_once_with(
-            query="test query",
-            course_name=None,
-            lesson_number=2
-        )
+        course_search_tool.store.search.assert_called_once_with(query="test query", course_name=None, lesson_number=2)
 
         # Verify result
         assert "Lesson specific content" in result
@@ -119,7 +121,7 @@ class TestCourseSearchTool:
         incomplete_results = SearchResults(
             documents=["Document without full metadata"],
             metadata=[{"chunk_index": 0}],  # Missing course_title and lesson_number
-            distances=[0.1]
+            distances=[0.1],
         )
         course_search_tool.store.search.return_value = incomplete_results
 
@@ -134,7 +136,7 @@ class TestCourseSearchTool:
         valid_results = SearchResults(
             documents=["Test content"],
             metadata=[{"course_title": "Test Course", "lesson_number": 1, "chunk_index": 0}],
-            distances=[0.1]
+            distances=[0.1],
         )
         course_search_tool.store.search.return_value = valid_results
 
@@ -159,9 +161,9 @@ class TestCourseSearchTool:
             metadata=[
                 {"course_title": "Test Course", "lesson_number": 1, "chunk_index": 0},
                 {"course_title": "Test Course", "lesson_number": 1, "chunk_index": 1},  # Duplicate
-                {"course_title": "Test Course", "lesson_number": 2, "chunk_index": 0}
+                {"course_title": "Test Course", "lesson_number": 2, "chunk_index": 0},
             ],
-            distances=[0.1, 0.15, 0.2]
+            distances=[0.1, 0.15, 0.2],
         )
         course_search_tool.store.search.return_value = duplicate_results
 

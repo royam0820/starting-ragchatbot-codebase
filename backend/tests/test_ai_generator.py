@@ -1,6 +1,8 @@
 """Tests for AIGenerator"""
+
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 from ai_generator import AIGenerator
 from tests.fixtures import create_anthropic_text_response, create_anthropic_tool_use_response
 
@@ -15,18 +17,14 @@ class TestAIGenerator:
         mock_anthropic_client.messages.create.return_value = mock_response
 
         # Generate response without tools
-        result = ai_generator.generate_response(
-            query="What is 2+2?",
-            tools=None,
-            tool_manager=None
-        )
+        result = ai_generator.generate_response(query="What is 2+2?", tools=None, tool_manager=None)
 
         # Verify API was called
         assert mock_anthropic_client.messages.create.called
         call_args = mock_anthropic_client.messages.create.call_args
 
         # Verify no tools were passed
-        assert 'tools' not in call_args[1]
+        assert "tools" not in call_args[1]
 
         # Verify response
         assert result == "This is a test response"
@@ -43,15 +41,13 @@ class TestAIGenerator:
 
         # Generate response
         result = ai_generator.generate_response(
-            query="What is Python?",
-            tools=mock_tools,
-            tool_manager=mock_tool_manager
+            query="What is Python?", tools=mock_tools, tool_manager=mock_tool_manager
         )
 
         # Verify tools were provided to API
         call_args = mock_anthropic_client.messages.create.call_args
-        assert 'tools' in call_args[1]
-        assert call_args[1]['tools'] == mock_tools
+        assert "tools" in call_args[1]
+        assert call_args[1]["tools"] == mock_tools
 
         # Verify tool manager was not used (stop_reason != "tool_use")
         mock_tool_manager.execute_tool.assert_not_called()
@@ -63,8 +59,7 @@ class TestAIGenerator:
         """Test complete tool calling flow"""
         # Mock initial response with tool use
         initial_response = create_anthropic_tool_use_response(
-            tool_name="search_course_content",
-            tool_input={"query": "MCP servers"}
+            tool_name="search_course_content", tool_input={"query": "MCP servers"}
         )
 
         # Mock final response after tool execution
@@ -81,17 +76,14 @@ class TestAIGenerator:
         result = ai_generator.generate_response(
             query="What are MCP servers?",
             tools=[{"name": "search_course_content"}],
-            tool_manager=mock_tool_manager
+            tool_manager=mock_tool_manager,
         )
 
         # Verify API was called twice (initial + after tool)
         assert mock_anthropic_client.messages.create.call_count == 2
 
         # Verify tool was executed
-        mock_tool_manager.execute_tool.assert_called_once_with(
-            "search_course_content",
-            query="MCP servers"
-        )
+        mock_tool_manager.execute_tool.assert_called_once_with("search_course_content", query="MCP servers")
 
         # Verify final response
         assert result == "MCP servers are used for..."
@@ -100,8 +92,7 @@ class TestAIGenerator:
         """Test _handle_tool_execution with successful tool call"""
         # Create initial response with tool use
         initial_response = create_anthropic_tool_use_response(
-            tool_name="search_course_content",
-            tool_input={"query": "test query"}
+            tool_name="search_course_content", tool_input={"query": "test query"}
         )
 
         # Create final response
@@ -119,14 +110,14 @@ class TestAIGenerator:
             "system": "System prompt",
             "model": "claude-sonnet-4",
             "temperature": 0,
-            "max_tokens": 800
+            "max_tokens": 800,
         }
 
         # Call _handle_tool_execution
         result = ai_generator._handle_tool_execution(
             initial_response=initial_response,
             base_params=base_params,
-            tool_manager=mock_tool_manager
+            tool_manager=mock_tool_manager,
         )
 
         # Verify tool was executed
@@ -137,7 +128,7 @@ class TestAIGenerator:
         call_args = mock_anthropic_client.messages.create.call_args
 
         # Verify messages include tool results
-        messages = call_args[1]['messages']
+        messages = call_args[1]["messages"]
         assert len(messages) == 3  # original + assistant + tool_result
 
         # Verify result
@@ -147,8 +138,7 @@ class TestAIGenerator:
         """Test handling when tool returns an error string"""
         # Create tool use response
         initial_response = create_anthropic_tool_use_response(
-            tool_name="search_course_content",
-            tool_input={"query": "test"}
+            tool_name="search_course_content", tool_input={"query": "test"}
         )
 
         # Create final response
@@ -165,14 +155,14 @@ class TestAIGenerator:
             "system": "System prompt",
             "model": "claude-sonnet-4",
             "temperature": 0,
-            "max_tokens": 800
+            "max_tokens": 800,
         }
 
         # Execute
         result = ai_generator._handle_tool_execution(
             initial_response=initial_response,
             base_params=base_params,
-            tool_manager=mock_tool_manager
+            tool_manager=mock_tool_manager,
         )
 
         # Should still complete successfully
@@ -182,8 +172,7 @@ class TestAIGenerator:
         """Test handling when tool execution raises exception - Should handle gracefully"""
         # Create tool use response
         initial_response = create_anthropic_tool_use_response(
-            tool_name="search_course_content",
-            tool_input={"query": "test"}
+            tool_name="search_course_content", tool_input={"query": "test"}
         )
 
         # Create final response after error is handled
@@ -199,14 +188,14 @@ class TestAIGenerator:
             "system": "System prompt",
             "model": "claude-sonnet-4",
             "temperature": 0,
-            "max_tokens": 800
+            "max_tokens": 800,
         }
 
         # Execute - should handle exception gracefully by catching it and passing error to Claude
         result = ai_generator._handle_tool_execution(
             initial_response=initial_response,
             base_params=base_params,
-            tool_manager=mock_tool_manager
+            tool_manager=mock_tool_manager,
         )
 
         # Should not crash and should return a response
@@ -214,14 +203,14 @@ class TestAIGenerator:
 
         # Verify the error was passed to Claude as a tool result
         call_args = mock_anthropic_client.messages.create.call_args
-        messages = call_args[1]['messages']
+        messages = call_args[1]["messages"]
 
         # Find the tool result message
         tool_result_message = messages[-1]  # Last message should be tool results
-        assert tool_result_message['role'] == 'user'
-        tool_results = tool_result_message['content']
+        assert tool_result_message["role"] == "user"
+        tool_results = tool_result_message["content"]
         assert len(tool_results) > 0
-        assert "Tool execution error" in tool_results[0]['content']
+        assert "Tool execution error" in tool_results[0]["content"]
 
     def test_generate_response_with_conversation_history(self, ai_generator, mock_anthropic_client):
         """Test that conversation history is included in system content"""
@@ -231,14 +220,11 @@ class TestAIGenerator:
 
         # Generate with history
         history = "User: Hello\nAssistant: Hi there!"
-        result = ai_generator.generate_response(
-            query="Follow-up question",
-            conversation_history=history
-        )
+        result = ai_generator.generate_response(query="Follow-up question", conversation_history=history)
 
         # Verify API was called with history in system content
         call_args = mock_anthropic_client.messages.create.call_args
-        system_content = call_args[1]['system']
+        system_content = call_args[1]["system"]
 
         assert "Previous conversation:" in system_content
         assert history in system_content
@@ -251,12 +237,9 @@ class TestAIGenerator:
 
         # Generate with tools
         mock_tools = [{"name": "test_tool"}]
-        result = ai_generator.generate_response(
-            query="Test query",
-            tools=mock_tools
-        )
+        result = ai_generator.generate_response(query="Test query", tools=mock_tools)
 
         # Verify tool_choice was set to auto
         call_args = mock_anthropic_client.messages.create.call_args
-        assert 'tool_choice' in call_args[1]
-        assert call_args[1]['tool_choice'] == {"type": "auto"}
+        assert "tool_choice" in call_args[1]
+        assert call_args[1]["tool_choice"] == {"type": "auto"}
