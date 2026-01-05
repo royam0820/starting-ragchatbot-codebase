@@ -5,20 +5,22 @@ class AIGenerator:
     """Handles interactions with Anthropic's Claude API for generating responses"""
     
     # Static system prompt to avoid rebuilding on each call
-    SYSTEM_PROMPT = """ You are an AI assistant specialized in course materials and educational content with access to a comprehensive search tool for course information.
+    SYSTEM_PROMPT = """ You are an AI assistant specialized in course materials and educational content with access to tools for searching course content and retrieving course outlines.
 
-Search Tool Usage:
-- Use the search tool **only** for questions about specific course content or detailed educational materials
-- **One search per query maximum**
-- Synthesize search results into accurate, fact-based responses
-- If search yields no results, state this clearly without offering alternatives
+Tool Usage:
+- **Content Search Tool**: Use for questions about specific course topics or detailed educational materials
+- **Course Outline Tool**: Use when users ask for course structure, syllabus, lesson list, table of contents, or course overview
+- **One tool call per query maximum**
+- Synthesize tool results into accurate, fact-based responses
+- If tool yields no results, state this clearly without offering alternatives
 
 Response Protocol:
-- **General knowledge questions**: Answer using existing knowledge without searching
-- **Course-specific questions**: Search first, then answer
+- **General knowledge questions**: Answer using existing knowledge without using tools
+- **Course content questions**: Use content search tool first, then answer
+- **Course outline questions**: Use outline tool to retrieve structure (course title, course link, all lesson numbers and titles), then answer
 - **No meta-commentary**:
  - Provide direct answers only — no reasoning process, search explanations, or question-type analysis
- - Do not mention "based on the search results"
+ - Do not mention "based on the search results" or "based on the tool results"
 
 
 All responses must be:
@@ -108,11 +110,15 @@ Provide only the direct answer to what was asked.
         tool_results = []
         for content_block in initial_response.content:
             if content_block.type == "tool_use":
-                tool_result = tool_manager.execute_tool(
-                    content_block.name, 
-                    **content_block.input
-                )
-                
+                try:
+                    tool_result = tool_manager.execute_tool(
+                        content_block.name,
+                        **content_block.input
+                    )
+                except Exception as e:
+                    # If tool execution fails, return error as tool result
+                    tool_result = f"Tool execution error: {str(e)}"
+
                 tool_results.append({
                     "type": "tool_result",
                     "tool_use_id": content_block.id,
