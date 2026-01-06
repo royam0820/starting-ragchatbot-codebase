@@ -619,6 +619,53 @@ header h1 {
     font-weight: 600;
 }
 
+/* Save Chat Button */
+.save-chat-button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    outline: none;
+}
+
+.save-chat-button:hover {
+    color: #10b981;
+}
+
+.save-chat-button:active {
+    transform: none;
+}
+
+.save-chat-button:focus {
+    color: #10b981;
+}
+
+.save-chat-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.save-chat-icon {
+    font-size: 0.875rem;
+    line-height: 1;
+}
+
+.save-chat-text {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
 .stats-header::-webkit-details-marker,
 .suggested-header::-webkit-details-marker {
     display: none;

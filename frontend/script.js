@@ -5,7 +5,7 @@ const API_URL = '/api';
 let currentSessionId = null;
 
 // DOM elements
-let chatMessages, chatInput, sendButton, totalCourses, courseTitles, newChatButton, themeToggle;
+let chatMessages, chatInput, sendButton, totalCourses, courseTitles, newChatButton, themeToggle, saveChatButton;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     courseTitles = document.getElementById('courseTitles');
     newChatButton = document.getElementById('newChatButton');
     themeToggle = document.getElementById('themeToggle');
+    saveChatButton = document.getElementById('saveChatButton');
 
     setupEventListeners();
     initializeTheme();
@@ -46,6 +47,9 @@ function setupEventListeners() {
         }
     });
 
+    // Save chat button
+    saveChatButton.addEventListener('click', handleSaveChat);
+
     // Suggested questions
     document.querySelectorAll('.suggested-item').forEach(button => {
         button.addEventListener('click', (e) => {
@@ -67,6 +71,7 @@ async function sendMessage() {
     chatInput.disabled = true;
     sendButton.disabled = true;
     newChatButton.disabled = true;
+    saveChatButton.disabled = true;
 
     // Add user message
     addMessage(query, 'user');
@@ -109,6 +114,7 @@ async function sendMessage() {
         chatInput.disabled = false;
         sendButton.disabled = false;
         newChatButton.disabled = false;
+        saveChatButton.disabled = false;
         chatInput.focus();
     }
 }
@@ -210,6 +216,83 @@ async function handleNewChat() {
 
     // Re-enable button
     newChatButton.disabled = false;
+}
+
+// Save chat history
+function handleSaveChat() {
+    // Check if there are any messages to save (excluding welcome message)
+    const messages = chatMessages.querySelectorAll('.message:not(.welcome-message)');
+
+    if (messages.length === 0) {
+        alert('No chat history to save. Start a conversation first!');
+        return;
+    }
+
+    // Extract chat data
+    const chatData = [];
+    messages.forEach((messageEl) => {
+        const type = messageEl.classList.contains('user') ? 'user' : 'assistant';
+        const contentEl = messageEl.querySelector('.message-content');
+
+        // Get text content (strip HTML for cleaner output)
+        let content = contentEl.textContent || contentEl.innerText;
+
+        // Get sources if they exist
+        const sourcesEl = messageEl.querySelector('.sources-content');
+        let sources = null;
+        if (sourcesEl) {
+            sources = Array.from(sourcesEl.querySelectorAll('.source-item')).map(item => {
+                const link = item.querySelector('.source-link');
+                if (link) {
+                    return {
+                        text: link.textContent,
+                        url: link.href
+                    };
+                }
+                return item.textContent;
+            });
+        }
+
+        chatData.push({
+            type,
+            content: content.trim(),
+            sources,
+            timestamp: new Date().toISOString()
+        });
+    });
+
+    // Create filename with timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const filename = `chat-history-${timestamp}.json`;
+
+    // Create blob and download
+    const dataStr = JSON.stringify(chatData, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+
+    // Cleanup
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    // Show success feedback
+    showSaveConfirmation();
+}
+
+function showSaveConfirmation() {
+    const originalText = saveChatButton.innerHTML;
+    saveChatButton.innerHTML = '<span class="save-chat-icon">✓</span><span class="save-chat-text">SAVED!</span>';
+    saveChatButton.disabled = true;
+
+    setTimeout(() => {
+        saveChatButton.innerHTML = originalText;
+        saveChatButton.disabled = false;
+    }, 2000);
 }
 
 // Load course statistics
